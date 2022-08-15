@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chainlink-{instance}
+  namespace: {namespace}
+  labels:
+    app: chainlink-{instance}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chainlink-{instance}
+  template:
+    metadata:
+      labels:
+        app: chainlink-{instance}
+    spec:
+      containers:
+        -
+          name: chainlink-{instance}
+          image: "smartcontract/chainlink:{chainlink_version}"
+          env:
+            -
+              name: ROOT
+              value: "/chainlink"
+            -
+              name: LOG_LEVEL
+              value: "debug"
+            -
+              name: ETH_CHAIN_ID
+              value: "4"
+            -
+              name: CHAINLINK_TLS_PORT
+              value: "0"
+            -
+              name: SECURE_COOKIES
+              value: "false"
+            -
+              name: ALLOW_ORIGINS
+              value: "*"
+            -
+              name: ETH_URL
+              value: "wss://rinkeby.infura.io/ws/v3/{infura_token}"
+            -
+              name: DATABASE_URL
+              value: "postgresql://{db_user}:{db_pwd}@{db_host}:5432/{db}?sslmode=disable"
+          args: ["node", "start", "-p", "/chainlink/.password", "-a", "/chainlink/.api"]
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "200m"
+          ports:
+            - containerPort: 6688
+          volumeMounts:
+            - name: host-mount
+              mountPath: /chainlink
+      volumes:
+        - name: host-mount
+          hostPath:
+            path: {mount_path}
