@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chainlink-{instance}
+  name: chainlink
   namespace: {namespace}
   labels:
-    app: chainlink-{instance}
+    app: chainlink
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: chainlink-{instance}
+      app: chainlink
   template:
     metadata:
       labels:
-        app: chainlink-{instance}
+        app: chainlink
     spec:
       containers:
         -
-          name: chainlink-{instance}
+          name: chainlink
           image: "smartcontract/chainlink:{chainlink_version}"
           env:
             -
@@ -25,10 +25,10 @@ spec:
               value: "/chainlink"
             -
               name: LOG_LEVEL
-              value: "debug"
-            -
+              value: "info"
+            - # Goerli chain Id = 5
               name: ETH_CHAIN_ID
-              value: "4"
+              value: "5"
             -
               name: CHAINLINK_TLS_PORT
               value: "0"
@@ -38,9 +38,9 @@ spec:
             -
               name: ALLOW_ORIGINS
               value: "*"
-            -
+            - # Goerli data endpoint
               name: ETH_URL
-              value: "wss://rinkeby.infura.io/ws/v3/{infura_token}"
+              value: "wss://goerli.infura.io/ws/v3/{infura_token}"
             -
               name: DATABASE_URL
               value: "postgresql://{db_user}:{db_pwd}@{db_host}:5432/{db}?sslmode=disable"

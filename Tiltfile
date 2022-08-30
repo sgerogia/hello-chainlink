@@ -67,7 +67,6 @@ print("📢 Starting Chainlink node")
 
 raw_yaml = read_file('./local-env/chainlink.yaml')
 yaml = str(raw_yaml).format(
-    instance=0,
     namespace=namespace,
     chainlink_version=link_version,
     infura_token=os.environ['INFURA_TOKEN'],
@@ -80,9 +79,9 @@ yaml = str(raw_yaml).format(
 
 k8s_yaml(blob(yaml))
 k8s_resource(
-    workload='chainlink-0',
+    workload='chainlink',
     resource_deps=['postgresql'],
     port_forwards=[
-        port_forward(6680, 6688, name='Chainlink port'),
+        port_forward(6688, 6688, name='Chainlink port'),
     ]
 )

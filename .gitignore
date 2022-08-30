@@ -1,2 +1,5 @@
+artifacts
 cache
 *.iml
+.secret
+node_modules
