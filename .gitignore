@@ -3,3 +3,5 @@ cache
 *.iml
 .secret
 node_modules
+venv
+deployments

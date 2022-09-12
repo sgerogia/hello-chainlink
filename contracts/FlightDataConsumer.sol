@@ -3,12 +3,14 @@ pragma solidity >=0.8.7;
 
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title The Flight Data Consumer contract
- * @notice A Chainlink client contract making requests for any combination of date and flight, then emitting an event with the result.
+ * @title The demo Flight Data Consumer contract.
+ * @notice A demo Chainlink client contract making requests for any combination of date and flight, then emitting an event with the result.
+ *       DO NOT USE IN PRODUCTION!
  */
-contract FlightDataConsumer is ChainlinkClient {
+contract FlightDataConsumer is ChainlinkClient, Ownable {
     using Chainlink for Chainlink.Request;
 
     string public flightStatus;
@@ -16,7 +18,7 @@ contract FlightDataConsumer is ChainlinkClient {
     string public scheduledArrivalTime;
     string public actualArrivalTime;
 
-    bytes32 private immutable jobId;
+    bytes32 public jobId;
     uint256 private immutable fee;
 
     event DataFulfilled(
@@ -105,12 +107,44 @@ contract FlightDataConsumer is ChainlinkClient {
         arrivalAirport = _airport;
         scheduledArrivalTime = _scheduledArrival;
         actualArrivalTime = _actualArrival;
-
     }
 
     /**
-     * @notice Withdraws LINK from the contract
+     * @notice Withdraws all LINK from the contract
      * @dev Implement a withdraw function to avoid locking your LINK in the contract
      */
-    function withdrawLink() external {}
+    function withdrawLink() public onlyOwner {
+        LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
+
+        require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
+    }
+
+    /**
+     * @notice Withdraws ETH from the contract
+     * @dev Implement a withdraw function to avoid locking your ETH in the contract
+     */
+    function withdrawEth() public onlyOwner {
+        payable(msg.sender).transfer(address(this).balance);
+    }
+
+    /**
+     * @notice Receive ETH in the contract
+     * @dev See https://docs.soliditylang.org/en/v0.8.5/contracts.html#receive-ether-function
+     */
+    receive() external payable {}
+
+    /**
+    * @return contract balance
+    */
+    function balance() external view returns (uint) {
+        return address(this).balance;
+    }
+
+    /**
+     * @notice Change the job id to use
+     * @dev Can be used for maintenance updates.
+     */
+    function setJobId(bytes32 _jobId) public onlyOwner {
+        jobId = _jobId;
+    }
 }

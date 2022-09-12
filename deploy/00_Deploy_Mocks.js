@@ -25,8 +25,8 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
     log("Mocks Deployed!")
     log("----------------------------------------------------")
     log("You are deploying to a local network, you'll need a local network running to interact")
-    log("Please run `yarn hardhat console` to interact with the deployed smart contracts!")
+    log("Please run `npx hardhat console` to interact with the deployed smart contracts!")
     log("----------------------------------------------------")
   }
 }
-module.exports.tags = ["all", "mocks", "main"]
+module.exports.tags = ["all", "mocks"]

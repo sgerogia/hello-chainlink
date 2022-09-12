@@ -10,37 +10,40 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deploy, log } = deployments
   const { deployer } = await getNamedAccounts()
   const chainId = network.config.chainId
+  const linkToken = networkConfig[chainId]["linkToken"]
 
-  let ethUsdPriceFeedAddress
-  if (chainId == 31337) {
-    const EthUsdAggregator = await deployments.get("MockV3Aggregator")
-    ethUsdPriceFeedAddress = EthUsdAggregator.address
+  // We are NOT on a local development network, we need to deploy the real Operator!
+  if (chainId != 31337) {
+    log("Live network detected.")
+    const args = [linkToken, deployer]
+
+    const waitBlockConfirmations = developmentChains.includes(network.name)
+        ? 1
+        : VERIFICATION_BLOCK_CONFIRMATIONS
+
+    const oracle = await deploy("Operator", {
+      from: deployer,
+      log: true,
+      args: args,
+      waitConfirmations: waitBlockConfirmations,
+    })
+
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        log("Verifying...")
+        await verify(oracle.address, args)
+    }
+
+    log("Operator Deployed!")
+    log("----------------------------------------------------")
+    log("You can now interact with the Operator contract with the following commands:")
+    const networkName = network.name == "hardhat" ? "localhost" : network.name
+    log(`npx hardhat is-auth-sender --contract ${oracle.address} --address <YOUR_NODE_ADDRESS> --network ${networkName}`)
+    log(`npx hardhat auth-senders --contract ${oracle.address} --network ${networkName}`)
+    log(`npx hardhat set-auth-senders --contract ${oracle.address} --addresses <COMMA_SEPARATED_LIST,OF_NODE_ADDRESSES> --network ${networkName}`)
+    log("----------------------------------------------------")
   } else {
-    ethUsdPriceFeedAddress = networkConfig[chainId]["ethUsdPriceFeed"]
+    log("Test network detected. Skipping Operator deployment...")
   }
-  // Price Feed Address, values can be obtained at https://docs.chain.link/docs/reference-contracts
-  // Default one below is ETH/USD contract on Kovan
-  const waitBlockConfirmations = developmentChains.includes(network.name)
-    ? 1
-    : VERIFICATION_BLOCK_CONFIRMATIONS
-  log("----------------------------------------------------")
-  const priceConsumerV3 = await deploy("PriceConsumerV3", {
-    from: deployer,
-    args: [ethUsdPriceFeedAddress],
-    log: true,
-    waitConfirmations: waitBlockConfirmations,
-  })
-
-  // Verify the deployment
-  if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-    log("Verifying...")
-    await verify(priceConsumerV3.address, [ethUsdPriceFeedAddress])
-  }
-
-  log("Run Price Feed contract with command:")
-  const networkName = network.name == "hardhat" ? "localhost" : network.name
-  log(`yarn hardhat read-price-feed --contract ${priceConsumerV3.address} --network ${networkName}`)
-  log("----------------------------------------------------")
 }
 
-module.exports.tags = ["all", "feed", "main"]
+module.exports.tags = ["all", "oracle", "main"]

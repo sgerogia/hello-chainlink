@@ -3,8 +3,8 @@ task("read-data", "Calls a Flight Data Consumer Contract to read data obtained f
   .setAction(async (taskArgs) => {
     const contractAddr = taskArgs.contract
     const networkId = network.name
-    console.log("Reading data from Flight Data Consumer contract ", contractAddr, " on network ", networkId)
-    const APIConsumer = await ethers.getContractFactory("APIConsumer")
+    console.log("Reading data from Flight Data Consumer contract", contractAddr, "on network", networkId)
+    const FlightDataConsumer = await ethers.getContractFactory("FlightDataConsumer")
 
     //Get signer information
     const accounts = await ethers.getSigners()
@@ -22,7 +22,7 @@ task("read-data", "Calls a Flight Data Consumer Contract to read data obtained f
     } else if (status == "" && ["hardhat", "localhost", "ganache"].indexOf(network.name) >= 0) { // local
       console.log("You'll have to manually update the value since you're on a local chain!")
     } else {
-        console.log("Status: %s, Airport: %s, Sched. arrival: %s, Actual arrival: %s,", status, airport, scheduledArrival, actualArrival)
+        console.log("Status: %s, Airport: %s, Sched. arrival: %s, Actual arrival: %s", status, airport, scheduledArrival, actualArrival)
     }
   })
 

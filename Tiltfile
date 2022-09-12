@@ -43,6 +43,23 @@ local('echo "$CONTENTS" > ' + pwd_path,
       echo_off=True,
       quiet=True)
 
+# --- Local API bridge ---
+print("📢 Starting API Bridge")
+bridge_path=os.path.abspath('python')
+docker_build('hello-chainlink/api-bridge', bridge_path)
+
+raw_yaml = read_file('./local-env/api-bridge.yaml')
+yaml = str(raw_yaml).format(
+    namespace=namespace,
+    api_token=os.environ['RAPIDAPI_TOKEN']
+)
+
+k8s_yaml(blob(yaml))
+
+k8s_resource('api-bridge', port_forwards=[
+  port_forward(5000, 5000, name='API Bridge port'),
+])
+
 # --- Postgres ---
 print("📢 Starting PostgreSQL")
 
@@ -80,7 +97,7 @@ yaml = str(raw_yaml).format(
 k8s_yaml(blob(yaml))
 k8s_resource(
     workload='chainlink',
-    resource_deps=['postgresql'],
+    resource_deps=['postgresql', 'api-bridge'],
     port_forwards=[
         port_forward(6688, 6688, name='Chainlink port'),
     ]

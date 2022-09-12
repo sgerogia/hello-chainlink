@@ -24,7 +24,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     additionalMessage = " --linkaddress " + linkTokenAddress
   } else {
     linkTokenAddress = networkConfig[chainId]["linkToken"]
-    oracle = networkConfig[chainId]["oracle"]
+    let Operator = await get("Operator")
+    oracle = Operator.address
   }
   const jobId = ethers.utils.toUtf8Bytes(networkConfig[chainId]["jobId"])
   const fee = networkConfig[chainId]["fee"]
@@ -60,9 +61,11 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     }
   }
 
-  log("Run API Consumer contract with following command:")
+  log("Run the Flight Data Consumer contract with the following commands:")
   const networkName = network.name == "hardhat" ? "localhost" : network.name
-  log(`yarn hardhat request-data --contract ${apiConsumer.address} --network ${networkName}`)
+  log(`npx hardhat set-jobid --contract ${apiConsumer.address} --jobId <JOB_ID_NO_DASHES> --network ${networkName}`)
+  log(`npx hardhat request-data --contract ${apiConsumer.address} --flight <IATA_CODE> --date <ISO8601_DATE> --network ${networkName}`)
+  log(`npx hardhat read-data --contract ${apiConsumer.address} --network ${networkName}`)
   log("----------------------------------------------------")
 }
 module.exports.tags = ["all", "api", "main"]

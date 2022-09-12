@@ -12,10 +12,16 @@ require("dotenv").config()
  * @type import('hardhat/config').HardhatUserConfig
  */
 
-const INFURA_API_KEY = process.env.INFURA_TOKEN
+// Infura API
+const API_KEY = process.env.INFURA_TOKEN
+const MAINNET_RPC_URL = "https://mainnet.infura.io/v3/" + API_KEY
+const GOERLI_RPC_URL = "https://goerli.infura.io/v3/" + API_KEY
 
-const MAINNET_RPC_URL = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
-const GOERLI_RPC_URL = "https://goerli.infura.io/v3/${INFURA_API_KEY}"
+// Alchmey API
+//const API_KEY = process.env.ALCHEMY_TOKEN
+//const MAINNET_RPC_URL = "https://eth-mainnet.g.alchemy.com/v2/" + API_KEY
+//const GOERLI_RPC_URL = "https://eth-goerli.g.alchemy.com/v2/" + API_KEY
+
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 // optional
 const MNEMONIC = process.env.MNEMONIC || "Your mnemonic"
@@ -48,6 +54,8 @@ module.exports = {
       //   },
       saveDeployments: true,
       chainId: 5,
+      gas: 6000000,
+      gasPrice: 20000000000,
     },
     mainnet: {
       url: MAINNET_RPC_URL,
@@ -60,10 +68,11 @@ module.exports = {
     },
   },
   etherscan: {
-    // yarn hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
+    // npx hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
     apiKey: {
       goerli: ETHERSCAN_API_KEY,
     },
+    customChains: [] // w/o this empty key, verification fails miserably
   },
   gasReporter: {
     enabled: REPORT_GAS,
@@ -102,6 +111,6 @@ module.exports = {
     ],
   },
   mocha: {
-    timeout: 40000, // 40 seconds max for promise timeouts
+    timeout: 40000, // 40 seconds max for test suite timeout
   },
 }

@@ -16,7 +16,6 @@ const { developmentChains, networkConfig } = require("../helper-hardhat-config")
         await deployments.fixture(["mocks", "api"])
         linkToken = await ethers.getContract("LinkToken")
         linkTokenAddress = linkToken.address
-        additionalMessage = ` --linkaddress  ${linkTokenAddress}`
         apiConsumer = await ethers.getContract("FlightDataConsumer")
         mockOperator = await ethers.getContract("MockOperator")
 
@@ -28,7 +27,6 @@ const { developmentChains, networkConfig } = require("../helper-hardhat-config")
         const transaction = await apiConsumer.requestFlightData("LHR", "2022/08/26")
         const transactionReceipt = await transaction.wait()
         // assert
-        // ...ChainlinkRequested event
         const requestId = transactionReceipt.events[0].topics[1]
 //        console.log("RequestId: ", requestId)
         expect(requestId).to.not.be.null
@@ -82,7 +80,7 @@ const { developmentChains, networkConfig } = require("../helper-hardhat-config")
             expiration,
             responseData)
         const oracleTrxReceipt = await oracleTrx.wait()
-
+//        console.log("Oracle trx ", oracleTrxReceipt)
 
         // assert
 
@@ -131,7 +129,18 @@ const { developmentChains, networkConfig } = require("../helper-hardhat-config")
         assert.equal(_airport, airport)
         assert.equal(_scheduledTime, scheduledTime)
         assert.equal(_actualTime, actualTime)
+      })
 
+      it("Should successfully change the job id", async () => {
+        // arrange
+        const newJobId = "cebdc07d02ab4efca2e8ebc736edd2b7"
+        const _id = ethers.utils.toUtf8Bytes(newJobId)
+        // act
+        await apiConsumer.setJobId(_id)
+        // assert
+        const _newId = await apiConsumer.jobId()
+        const _newJobId = ethers.utils.toUtf8String(_newId)
+        assert.equal(_newJobId, newJobId)
       })
 
     })

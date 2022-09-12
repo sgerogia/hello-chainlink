@@ -4,52 +4,55 @@ schemaVersion                   = 1
 evmChainID                      = 5
 name                            = "Flight Stats API job (Goerli)"
 # Replace this with the deployed Oracle contract
-contractAddress                 = "0xCC79157eb46F5624204f47AB42b3906cAA40eaB7"
-# Consumers need to pay ≥0.1 LINK per call. 1 LINK = 10^18 Juels
-minContractPaymentLinkJuels     = 100000000000000000
+contractAddress                 = "YOUR_OPERATOR_CONTRACT_ADDRESS"
+# Consumers need to pay ≥0.01 LINK per call. 1 LINK = 10^18 Juels
+minContractPaymentLinkJuels     = 10000000000000000
 # Task is considered failed after 1 min of execution
 maxTaskDuration     = "1m"
 
 observationSource   = """
-    // Parse the request log and get the CBOR payload inside of it
+    // Parse the OracleRequest event and get the CBOR payload inside of it
     decode_log  [type="ethabidecodelog"
                     data="$(jobRun.logData)"
                     topics="$(jobRun.logTopics)"
-                    abi="FlightStatusRequest(bytes32 requestID, bytes cborPayload)"
+                    abi="OracleRequest(bytes32 indexed specId, address requester, bytes32 requestId, uint256 payment, address callbackAddr, bytes4 callbackFunctionId, uint256 cancelExpiration, uint256 dataVersion, bytes data)"
                 ]
 
     decode_cbor [type="cborparse"
-                    data="$(decode_log.cborPayload)"
+                    data="$(decode_log.data)"
                 ]
 
-    // With flight & date make an HTTP fetch
-    // Replace the API key before deploying
-    flight      [type="http" method=GET
-                    url="https://aerodatabox.p.rapidapi.com/flights/number/${decode_cbor.flight}/${decode_cbor.date}"
-                    headers="[ \\"X-RapidAPI-Key\\", \\"YOUR_AERODATABOX_KEY\\", \\"X-RapidAPI-Host\\", \\"aerodatabox.p.rapidapi.com\\" ]"
+    // Call the configured bridge with extracted flight and date
+    flight      [type="bridge"
+                    name="aerodatabox"
+                    requestData=<{"flight": $(decode_cbor.flight), "date": $(decode_cbor.date)}>
                 ]
+
+    // The following does not work, unfortunately
+    // Chainlink does not variable expansion *inside* strings for now; only the entire string can be a variable
+//    flight      [type="http" method=GET
+//                    url="https://aerodatabox.p.rapidapi.com/flights/number/$(decode_cbor.flight)/$(decode_cbor.date)"
+//                    headers="[ \\"X-RapidAPI-Key\\", \\"YOUR_AERODATABOX_KEY\\", \\"X-RapidAPI-Host\\", \\"aerodatabox.p.rapidapi.com\\" ]"
+//                    allowUnrestrictedNetworkAccess=true
+//                ]
     decode_log -> decode_cbor -> flight
 
     // Parse the values we are intgerested in
     // Flight Status
     status       [type="jsonparse" data="$(flight)"
-                    path="0.status"
-                    separator="."
+                    path="status"
                 ]
     // Arrival airport
     airport     [type="jsonparse" data="$(flight)"
-                    path="0.arrival.airport.iata"
-                    separator="."
+                    path="iata"
                 ]
     // Scheduled Time UTC
     scheduled   [type="jsonparse" data="$(flight)"
-                    path="0.arrival.scheduledTimeUtc"
-                    separator="."
+                    path="scheduledTimeUtc"
                 ]
     // Actual Time UTC (optional)
     actual      [type="jsonparse" data="$(flight)"
-                    path="0.arrival.actualTimeUtc"
-                    separator="."
+                    path="actualTimeUtc"
                     lax=true
                 ]
     flight -> status
@@ -60,7 +63,7 @@ observationSource   = """
     // Compile Oracle multi-variable response
     encode_mvr  [type="ethabiencode"
                     abi="(bytes32 requestId, string _status, string _airport, string _scheduledArrival, string _actualArrival)"
-                    data="{\\"requestId\\": $(decode_log.requestId), \\"_status\\": $(status), \\"_airport\\": $(airport), \\"_scheduledArrival\\": $(scheduled), \\"_actualArrival\\": $(actual)}"
+                    data=<{"requestId": $(decode_log.requestId), "_status": $(status), "_airport": $(airport), "_scheduledArrival": $(scheduled), "_actualArrival": $(actual)}>
                 ]
     status -> encode_mvr
     airport -> encode_mvr
@@ -70,8 +73,8 @@ observationSource   = """
     // ...and submit trx
     encode_tx   [type="ethabiencode"
                     abi="fulfillOracleRequest2(bytes32 requestId, uint256 payment, address callbackAddress, bytes4 callbackFunctionId, uint256 expiration, bytes calldata data)"
-                    data="{\\"requestId\\": $(decode_log.requestId), \\"payment\\": $(decode_log.payment), \\"callbackAddress\\": $(decode_log.callbackAddr), \\"callbackFunctionId\\": $(decode_log.callbackFunctionId), \\"expiration\\": $(decode_log.cancelExpiration), \\"data\\": $(encode_mwr)}"
+                    data=<{"requestId": $(decode_log.requestId), "payment": $(decode_log.payment), "callbackAddress": $(decode_log.callbackAddr), "callbackFunctionId": $(decode_log.callbackFunctionId), "expiration": $(decode_log.cancelExpiration), "data": $(encode_mvr)}>
                 ]
-    submit_tx  [type="ethtx" to="$(contractAddress)" data="$(encode_tx)"]
+    submit_tx  [type="ethtx" to="$(jobRun.logAddress)" data="$(encode_tx)"]
     encode_mvr -> encode_tx -> submit_tx
 """
