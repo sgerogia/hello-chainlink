@@ -1,13 +1,29 @@
-# Sample Hardhat Project
+# Chainlink Flight Data Oracle
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This project is an end-to-end demonstration of spinning up Chainlink nodes and creating Oracles.  
+It uses a simple flight data use case as an example.
 
-Try running some of the following tasks:
+## Requirements
 
-```shell
-npx hardhat help
+* Docker Desktop
+* kubectl
+* Helm
+* Tilt
+* Use Docker Desktop as the K8s environment `kubectl config use-context docker-desktop`
+* Node.JS
+* nvm   
+* Infura API key
+* Etherscan API key
+
+## Getting started
+
+```bash
+nvm install 18.7.0
+nvm use 18.7.0
+node install 
 npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
 ```
+
+## Detailed scenario
+
+Follow the instructions in the [associated blog post](https://sgerogia.github.io/Chainlink-Oracle/).
